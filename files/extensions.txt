@@ -9,3 +9,13 @@
 .old
 .original
 .save
+.sql
+.sql.zip
+.sql.tar.gz
+.sql.bzip
+.sql.rar
+.sql.gzip
+.sql.7z
+.sql.bak
+.sql.backup
+.conf
