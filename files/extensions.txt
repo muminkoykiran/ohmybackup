@@ -10,6 +10,7 @@
 .original
 .save
 .sql
+.dump.sql
 .sql.zip
 .sql.tar.gz
 .sql.gz
