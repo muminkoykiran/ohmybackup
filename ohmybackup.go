@@ -164,7 +164,7 @@ func scanPath(filename string, hostname string) string {
 		lastStatusCode = getStatusCode(httpResponse)
 		var chckDrm = "" + urlE + " | Response Code : " + lastStatusCode
 
-		if lastStatusCode == "200" || lastStatusCode == "301" || lastStatusCode == "302" || lastStatusCode == "304" || lastStatusCode == "307" || lastStatusCode == "403" {
+		if lastStatusCode == "200" || lastStatusCode == "304" || lastStatusCode == "403" {
 		// if lastStatusCode == "200" || lastStatusCode == "301" || lastStatusCode == "302" || lastStatusCode == "304" || lastStatusCode == "307" || lastStatusCode == "403" {
 			fmt.Printf("\033[2K\r%s\n", "* Founded Dir Path : "+chckDrm)
 			foundedFolders = append(foundedFolders, urlE)
