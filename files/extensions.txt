@@ -12,6 +12,8 @@
 .sql
 .sql.zip
 .sql.tar.gz
+.sql.gz
+.sql.bz2
 .sql.bzip
 .sql.rar
 .sql.gzip
