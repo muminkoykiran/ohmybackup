@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Randomized User Agent
@@ -20,13 +21,65 @@ var files = "files.txt"
 var folders = "folders.txt"
 var foundedFolders []string
 
-func getStatusCode(url string) string {
+// httpGet isminde bir fonksiyon oluşturuyoruz. Bu fonksiyon içerisine bir url parametresi alıyor. Bu fonksiyon http get sorgusu yaparak dönen response'u döndürüyor.
+func httpGet(url string) *http.Response {
+	
+	// http.Get fonksiyonu ile url parametresi ile gelen url'e bir http get sorgusu yapıyoruz. Bu fonksiyon bize bir response ve error döndürüyor.
+	//response, err := http.Get(url)
 
-	resp, err := http.Get(url)
+	// http get request without no follow redirect
+	 client := &http.Client{
+	 	CheckRedirect: func(req *http.Request, via []*http.Request) error {
+	 		return http.ErrUseLastResponse
+	 	},
+	 }
+	 response, err := client.Get(url)
+
+	// Eğer error varsa log.Fatal ile hata mesajını ekrana yazdırıyoruz.
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatal(err)
 	}
+
+	// response'u döndürüyoruz.
+	return response
+}
+
+// getStatusCode isminde bir fonksiyon oluşturuyoruz. Bu fonksiyon içerisine bir response parametresi alıyor. Bu fonksiyon response'un status kodunu döndürüyor.
+func getStatusCode(resp *http.Response) string {
+	
+	// response'un status kodunu döndürüyoruz.
 	return strconv.Itoa(resp.StatusCode)
+}
+
+func getContentType(resp *http.Response) string {
+	
+	var contentType = resp.Header.Get("Content-type")
+	
+	if contentType == "" {
+		return "application/octet-stream"
+	}
+	
+	return contentType
+}
+
+// checkSuitableContentType isimli bir fonksiyon olsun. Bu fonksiyon içerisine bir contentType parametresi alsın. Bu fonksiyon contentType parametresi ile gelen değerin text/html olup olmadığını kontrol edip true veya false döndürsün.
+func checkSuitableContentType(contentType string) bool {
+
+	// Eğer contentType içeriğinde text/html değeri içeriyorsa true döndürüyoruz.
+    if strings.Contains(contentType, "text/html") {
+        return false
+    }
+
+	return true
+}
+
+func checkSuitableStatusCode(statusCode string) bool {
+
+	if statusCode == "200" || statusCode == "301" || statusCode == "302" || statusCode == "304" || statusCode == "307" || statusCode == "403" {
+		return true
+	} else {
+		return false
+	}
 }
 
 func scanFiles() {
@@ -35,34 +88,46 @@ func scanFiles() {
 		fmt.Println("\n************* Starting Scan Backups Files. / PATH : " + fndPTHS + " *************\n")
 
 		fileslist, err := os.Open(pathF + "/files.txt")
+		
 		if err != nil {
 			log.Fatal(err)
 		}
+		
 		defer fileslist.Close()
-		var lastCheck = ""
+
 		fileScan := bufio.NewScanner(fileslist)
+		
 		for fileScan.Scan() {
 
 			extensionss, err := os.Open(pathF + "/extensions.txt")
+			
 			if err != nil {
 				log.Fatal(err)
 			}
+			
 			defer extensionss.Close()
 
 			scanner := bufio.NewScanner(extensionss)
+			
 			for scanner.Scan() {
 
-				var urlE = fndPTHS + "/" + fileScan.Text() + scanner.Text()
+				var urlE = fndPTHS + fileScan.Text() + scanner.Text()
+				
+				var httpResponse = httpGet(urlE)
 
-				lastCheck = getStatusCode(urlE)
+				var lastStatusCode = getStatusCode(httpResponse)
+				var lastContentType = getContentType(httpResponse)
 
-				var chckDrm = urlE + " | Response Code : " + lastCheck
+				var chckDrm = urlE + " | Response Code : " + lastStatusCode
 
-				if lastCheck == "200" || lastCheck == "301" || lastCheck == "302" || lastCheck == "304" || lastCheck == "307" || lastCheck == "403" {
-					fmt.Printf("\033[2K\r%s\n", "* Founded :"+chckDrm)
+				var suitableStatusCode = checkSuitableStatusCode(lastStatusCode)
+				var suitableContentType = checkSuitableContentType(lastContentType)
+				
+				if suitableStatusCode == true && suitableContentType == true {
+					fmt.Printf("\033[2K\r%s\n", "* Founded File Path : " + chckDrm)
 					foundedFolders = append(foundedFolders, urlE)
 				} else {
-					fmt.Printf("\033[2K\r%s", "Checking : "+chckDrm)
+					fmt.Printf("\033[2K\r%s", "Checking File Path : " + chckDrm)
 				}
 
 			}
@@ -78,34 +143,41 @@ func scanFiles() {
 func scanPath(filename string, hostname string) string {
 
 	file, err := os.Open(pathF + "/" + filename)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
+	
 	defer file.Close()
 
-	var lastCheck = ""
 	scanner := bufio.NewScanner(file)
 
-	fmt.Println("\n************* Starting Scan Backups PATHS *************\n")
+	fmt.Println("\n************* Starting Scan Backups Dir PATHS *************\n")
+
+	var lastStatusCode = ""
 
 	for scanner.Scan() {
-		var urlE = hostname + "/" + scanner.Text()
-		lastCheck = getStatusCode(urlE)
+		var urlE = hostname + "/" + scanner.Text() + "/"
 
-		var chckDrm = "" + urlE + " | Response Code : " + lastCheck
+		var httpResponse = httpGet(urlE)
 
-		if lastCheck == "200" || lastCheck == "301" || lastCheck == "302" || lastCheck == "304" || lastCheck == "307" || lastCheck == "403" {
-			fmt.Printf("\033[2K\r%s\n", "* Founded : "+chckDrm)
+		lastStatusCode = getStatusCode(httpResponse)
+		var chckDrm = "" + urlE + " | Response Code : " + lastStatusCode
+
+		if lastStatusCode == "200" || lastStatusCode == "301" || lastStatusCode == "302" || lastStatusCode == "304" || lastStatusCode == "307" || lastStatusCode == "403" {
+		// if lastStatusCode == "200" || lastStatusCode == "301" || lastStatusCode == "302" || lastStatusCode == "304" || lastStatusCode == "307" || lastStatusCode == "403" {
+			fmt.Printf("\033[2K\r%s\n", "* Founded Dir Path : "+chckDrm)
 			foundedFolders = append(foundedFolders, urlE)
 		} else {
-			fmt.Printf("\033[2K\r%s", "Checking : "+chckDrm)
+			fmt.Printf("\033[2K\r%s", "Checking Dir Path : " + chckDrm)
 		}
 
 	}
 
 	fmt.Printf("\033[2K\r%s", "\nPath Scaning Ended.\n")
 	scanFiles()
-	return lastCheck
+	
+	return lastStatusCode
 }
 
 func main() {
@@ -120,7 +192,7 @@ func main() {
 	|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|/__\|
 						
 	Backup Directories & Backup Files Scanner.
-	Github : github.com/tismayil
+	Github : github.com/muminkoykiran
 	Host : ` + *hostname + `
 	`)
 
