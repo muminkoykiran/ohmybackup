@@ -55,10 +55,6 @@ func getContentType(resp *http.Response) string {
 	
 	var contentType = resp.Header.Get("Content-type")
 	
-	if contentType == "" {
-		return "application/octet-stream"
-	}
-	
 	return contentType
 }
 
@@ -66,16 +62,16 @@ func getContentType(resp *http.Response) string {
 func checkSuitableContentType(contentType string) bool {
 
 	// Eğer contentType içeriğinde text/html değeri içeriyorsa true döndürüyoruz.
-    if strings.Contains(contentType, "text/html") {
+    if strings.Contains(contentType, "text/html") || contentType == "" {
         return false
     }
 
 	return true
 }
 
-func checkSuitableStatusCode(statusCode string) bool {
+func checkSuitableStatusCodeForFile(statusCode string) bool {
 
-	if statusCode == "200" || statusCode == "301" || statusCode == "302" || statusCode == "304" || statusCode == "307" || statusCode == "403" {
+	if statusCode == "200" || statusCode == "304" || statusCode == "307" {
 		return true
 	} else {
 		return false
@@ -120,7 +116,7 @@ func scanFiles() {
 
 				var chckDrm = urlE + " | Response Code : " + lastStatusCode
 
-				var suitableStatusCode = checkSuitableStatusCode(lastStatusCode)
+				var suitableStatusCode = checkSuitableStatusCodeForFile(lastStatusCode)
 				var suitableContentType = checkSuitableContentType(lastContentType)
 				
 				if suitableStatusCode == true && suitableContentType == true {
@@ -164,7 +160,7 @@ func scanPath(filename string, hostname string) string {
 		lastStatusCode = getStatusCode(httpResponse)
 		var chckDrm = "" + urlE + " | Response Code : " + lastStatusCode
 
-		if lastStatusCode == "200" || lastStatusCode == "301" || lastStatusCode == "302" || lastStatusCode == "304" || lastStatusCode == "307" || lastStatusCode == "403" {
+		if lastStatusCode == "200" || lastStatusCode == "304" || lastStatusCode == "403" {
 		// if lastStatusCode == "200" || lastStatusCode == "301" || lastStatusCode == "302" || lastStatusCode == "304" || lastStatusCode == "307" || lastStatusCode == "403" {
 			fmt.Printf("\033[2K\r%s\n", "* Founded Dir Path : "+chckDrm)
 			foundedFolders = append(foundedFolders, urlE)
