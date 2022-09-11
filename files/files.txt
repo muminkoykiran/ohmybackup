@@ -37,6 +37,7 @@ archive
 !backup
 www
 root
+localhost
 archive
 a
 123
