@@ -19,3 +19,5 @@
 .sql.bak
 .sql.backup
 .conf
+.bz2
+.gz
